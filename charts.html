@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <title>Trading-Chart</title>
+</head>
+<body onload="fetch()">
+    <h2 class="text-center text-success">Trading Chart- BTC/USDT</h2>
+    <div class="container" id="tvChart"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web-socket-js/1.0.0/web_socket.min.js" integrity="sha512-jtr9/t8rtBf1Sv832XjG1kAtUECQCqFnTAJWccL8CSC82VGzkPPih8rjtOfiiRKgqLXpLA1H/uQ/nq2bkHGWTQ==" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+<script type="text/javascript">
+    // create reference to the console log
+    const log = console.log;
+
+    //Define Chart properties
+    const chartProperties = {
+        width:1200,
+        height:600,
+        timeScale:{
+            timeVisible:true,
+            secondsVisible:false,
+        }
+    }
+
+    // Creating the chart using LightweightCharts Library
+    const domElement = document.getElementById('tvChart');
+   
+    // Using Binance BTC/USD API data to render the chart
+    //Using Fetch API to get the data
+    
+
+    // fetch('https://cors-anywhere.herokuapp.com/https://api.binance.com//api/v3/klines?symbol=BTCUSDT&interval=1m&limit=1000').then(res => res.json()).then(data => {
+    //     const candlestickdata = data.map(d => {
+    //         return {time:d[0]/1000,open:parseFloat(d[1]),high:parseFloat(d[2]),low:parseFloat(d[3]),close:parseFloat(d[4])}
+    //     });
+    //     // Set the above fetched data into the map
+
+    //     candleSeries.setData(candlestickdata);
+    // }).catch(err => log(err))
+
+    function fetch(){
+    $.get("https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=EUR&to_symbol=USD&apikey=demo",
+
+      function (data){
+        const chart = LightweightCharts.createChart(domElement,chartProperties);
+    // To add Line series following line is needed
+    //const lineSeries = chart.addLineSeries();
+
+          var arrdata = Object.entries(data);
+          console.log(arrdata[1][0].length);
+          var plot = Object.entries(arrdata[1][1]);
+        //console.log(plot[0][0]);  //  2020-12-21 16:27:00
+
+        console.log(plot[0][1]["1. open"]);
+        console.log(plot[0][1]["2. high"]);
+        console.log(plot[0][1]["3. low"]);
+        console.log(plot[0][1]["4. close"]);
+    // Add Candlestick series
+    const candleSeries = chart.addCandlestickSeries();
+    candleSeries.setData([
+    { time: plot[3][0], open: plot[3][1]["1. open"], high: plot[3][1]["2. high"], low: plot[3][1]["3. low"], close: plot[3][1]["4. close"] },
+    { time: plot[2][0], open: plot[2][1]["1. open"], high: plot[2][1]["2. high"], low: plot[2][1]["3. low"], close: plot[2][1]["4. close"] },
+    { time: plot[1][0], open: plot[1][1]["1. open"], high: plot[1][1]["2. high"], low: plot[1][1]["3. low"], close: plot[1][1]["4. close"] },
+	{ time: plot[0][0], open: plot[0][1]["1. open"], high: plot[0][1]["2. high"], low: plot[0][1]["3. low"], close: plot[0][1]["4. close"] }
+    ]);
+
+
+    //     for(i=arrdata[1][0].length;i>=0;i--){
+            
+    //  candleSeries.setData([      
+	// { time: plot[i][0], open: plot[i][1]["1. open"], high: plot[i][1]["2. high"], low: plot[i][1]["3. low"], close: plot[i][1]["4. close"] },
+    // ]);
+            
+    //     }
+      }
+    );
+    }
+    var binanceSocket = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@miniTicker");
+    binanceSocket.onmessage = function (event){
+        var messageObject = JSON.parse(event.data);
+        let unix_timestamp = messageObject.E;
+// Create a new JavaScript Date object based on the timestamp
+// multiplied by 1000 so that the argument is in milliseconds, not seconds.
+var date = new Date(unix_timestamp * 1000);
+// Hours part from the timestamp
+var hours = date.getHours();
+// Minutes part from the timestamp
+var minutes = "0" + date.getMinutes();
+// Seconds part from the timestamp
+var seconds = "0" + date.getSeconds();
+
+// Will display time in 10:30:23 format
+var formattedTime = hours + ':' + minutes.substr(-2) + ':' + seconds.substr(-2);
+
+//console.log(formattedTime);
+        var plot = {
+            time:formattedTime,
+            open:parseFloat(messageObject.o),
+            high:parseFloat(messageObject.h),
+            low:parseFloat(messageObject.l),
+            close:parseFloat(messageObject.c)
+        }
+        log(plot);
+        const chart = LightweightCharts.createChart(domElement,chartProperties);
+        const candleSeries = chart.addCandlestickSeries();
+        candleSeries.update(plot);
+    }
+</script>
+</body>
+</html>

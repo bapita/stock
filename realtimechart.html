@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <title>Trading-Chart</title>
+</head>
+<body>
+    <h2 class="text-center text-success">Trading Chart- BTC/USDT</h2>
+    <div class="container" id="tvChart"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web-socket-js/1.0.0/web_socket.min.js" integrity="sha512-jtr9/t8rtBf1Sv832XjG1kAtUECQCqFnTAJWccL8CSC82VGzkPPih8rjtOfiiRKgqLXpLA1H/uQ/nq2bkHGWTQ==" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+<script type="text/javascript">
+    // create reference to the console log
+    const log = console.log;
+
+    //Define Chart properties
+    const chartProperties = {
+        width:1200,
+        height:600,
+        timeScale:{
+            timeVisible:true,
+            secondsVisible:false,
+        }
+    }
+
+    // Creating the chart using LightweightCharts Library
+    const domElement = document.getElementById('tvChart');
+    const chart = LightweightCharts.createChart(domElement,chartProperties);
+    // To add Line series following line is needed
+    //const lineSeries = chart.addLineSeries();
+
+    // Add Candlestick series
+    const candleSeries = chart.addCandlestickSeries();
+
+    // Using Binance BTC/USD API data to render the chart
+    //Using Fetch API to get the data
+
+    fetch('https://cors-anywhere.herokuapp.com/https://api.binance.com//api/v3/klines?symbol=BTCUSDT&interval=1m&limit=1000').then(res => res.json()).then(data => {
+        const candlestickdata = data.map(d => {
+            return {time:d[0]/1000,open:parseFloat(d[1]),high:parseFloat(d[2]),low:parseFloat(d[3]),close:parseFloat(d[4])}
+        });
+        // Set the above fetched data into the map
+
+        candleSeries.setData(candlestickdata);
+    }).catch(err => log(err))
+
+    var binanceSocket = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@kline_1m");
+        binanceSocket.onmessage = function (event){
+        var messageObject = JSON.parse(event.data);
+        var arrdata = Object.entries(messageObject);
+        log(arrdata[3][1]['o']);
+        log(arrdata[3][1]['h']);
+        log(arrdata[3][1]['l']);
+        log(arrdata[3][1]['c']);
+        var date = new Date(messageObject.E * 1000);
+        var plot = {
+            time:(messageObject.E)/1000,
+            open:arrdata[3][1]['o'],
+            high:arrdata[3][1]['h'],
+            low:arrdata[3][1]['l'],
+            close:arrdata[3][1]['c']
+        }
+        log(plot);
+        candleSeries.update(plot);
+    }
+</script>
+</body>
+</html>
